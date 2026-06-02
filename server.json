@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.cadlens-co/cadlens-mcp",
+  "description": "Model Context Protocol server that wraps the CADLens REST API.",
+  "repository": { "url": "https://github.com/cadlens-co/cadlens-mcp", "source": "github" },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "cadlens-mcp",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "CADLENS_API_KEY",
+          "description": "Your CADLens API key",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "CADLENS_API_BASE",
+          "description": "API base URL (default: https://api.cadlens.co/v1)",
+          "isRequired": false,
+          "default": "https://api.cadlens.co/v1"
+        },
+        {
+          "name": "WEBHOOK_PUBLIC_URL",
+          "description": "Public URL for webhook auto-registration (optional)",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

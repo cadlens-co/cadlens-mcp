@@ -1,6 +1,7 @@
 {
   "name": "cadlens-mcp",
   "version": "0.1.0",
+  "mcpName": "io.github.cadlens-co/cadlens-mcp",
   "description": "Model Context Protocol server that wraps the CADLens REST API.",
   "type": "module",
   "bin": {
