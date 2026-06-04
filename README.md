@@ -2,47 +2,46 @@
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that wraps the [CADLens](https://cadlens.co) REST API so MCP-aware LLM clients (Claude Desktop, Claude Code, Continue, Zed) can parse CAD files (`.dwg`, `.dxf`, `.dwf`, `.dwfx`, `.dgn` V7, `.pdf`, max 100 MB) and reason over the extracted entity / layer / metadata payloads.
 
-## Quick start
+## Install
+
+Get an API key from the [CADLens dashboard](https://cadlens.co) first — the MCP server cannot create keys.
+
+### Claude Desktop / Cursor / Windsurf
+
+Add to your MCP client config (e.g. `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "cadlens": {
+      "command": "npx",
+      "args": ["-y", "@cadlens/mcp-server"],
+      "env": {
+        "CADLENS_API_KEY": "cadl_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+### Claude Code CLI
+
+```bash
+claude mcp add cadlens \
+  --env CADLENS_API_KEY=cadl_xxx \
+  -- npx -y @cadlens/mcp-server
+```
+
+---
+
+## Development (build from source)
 
 ```bash
 npm install
 npm run build
 
 export CADLENS_API_KEY="cadl_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# Optional — defaults to https://api.cadlens.co/v1
-export CADLENS_API_BASE="https://api.cadlens.co/v1"
-
 node dist/index.js
-```
-
-Create an API key in the CADLens dashboard — the MCP server does not (and cannot) create keys.
-
-## Claude Code wiring
-
-```bash
-claude mcp add cadlens \
-  --env CADLENS_API_KEY=cadl_xxx \
-  --env CADLENS_API_BASE=https://api.cadlens.co/v1 \
-  -- node /absolute/path/to/cadlens-mcp/dist/index.js
-```
-
-## Claude Desktop wiring
-
-`~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
-
-```json
-{
-  "mcpServers": {
-    "cadlens": {
-      "command": "node",
-      "args": ["/absolute/path/to/cadlens-mcp/dist/index.js"],
-      "env": {
-        "CADLENS_API_BASE": "https://api.cadlens.co/v1",
-        "CADLENS_API_KEY": "cadl_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-      }
-    }
-  }
-}
 ```
 
 ## Tools
