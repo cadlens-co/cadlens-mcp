@@ -38,5 +38,27 @@
     "undici": "^8.2.0",
     "vitest": "^1.6.0"
   },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-agents",
+    "cad",
+    "dwg",
+    "dxf",
+    "cad-parser",
+    "cad-api",
+    "engineering-api",
+    "aec",
+    "cadlens"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cadlens-co/cadlens-mcp"
+  },
+  "homepage": "https://cadlens.co",
+  "bugs": {
+    "url": "https://github.com/cadlens-co/cadlens-mcp/issues"
+  },
   "license": "MIT"
 }

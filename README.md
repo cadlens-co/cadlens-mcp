@@ -1,10 +1,15 @@
 # cadlens-mcp
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server that wraps the [CADLens](https://cadlens.co) REST API so MCP-aware LLM clients (Claude Desktop, Claude Code, Continue, Zed) can parse CAD files (`.dwg`, `.dxf`, `.dwf`, `.dwfx`, `.dgn` V7, `.pdf`, max 100 MB) and reason over the extracted entity / layer / metadata payloads.
+[![npm version](https://badge.fury.io/js/@cadlens%2Fmcp-server.svg)](https://www.npmjs.com/package/@cadlens/mcp-server)
+[![GitHub](https://img.shields.io/badge/GitHub-cadlens--co%2Fcadlens--mcp-blue?logo=github)](https://github.com/cadlens-co/cadlens-mcp)
+
+A [Model Context Protocol](https://modelcontextprotocol.io) server that wraps the [Cadlens CAD parsing API](https://cadlens.co) so MCP-aware LLM clients (Claude Desktop, Claude Code, Cursor, Zed, Windsurf) can parse CAD files (`.dwg`, `.dxf`, `.dwf`, `.dwfx`, `.dgn` V7, `.pdf`, max 100 MB) and reason over the extracted entity, layer, and metadata payloads.
+
+[Cadlens](https://cadlens.co) converts CAD drawings into structured JSON without requiring AutoCAD or any desktop software — learn more at [cadlens.co](https://cadlens.co).
 
 ## Install
 
-Get an API key from the [CADLens dashboard](https://cadlens.co) first — the MCP server cannot create keys.
+Get an API key from the [Cadlens dashboard](https://cadlens.co) first — keys start with `cad_` and are created in the dashboard for free.
 
 ### Claude Desktop / Cursor / Windsurf
 
@@ -96,6 +101,24 @@ This repo ships five agents under `.claude/agents/`:
 - `mcp-tool-implementer` — scaffolds new tools following the existing `src/tools/*` pattern.
 - `cad-drawing-summarizer` — uses the MCP tools to summarize a CAD file in natural language.
 - `cad-layer-inspector` — drills into a single layer of a parsed drawing.
+
+## Links
+
+- [Cadlens official website](https://cadlens.co)
+- [Cadlens API documentation](https://cadlens.co/docs)
+- [Cadlens pricing](https://cadlens.co/pricing)
+- [DWG parser for AI agents](https://cadlens.co)
+- [npm package](https://www.npmjs.com/package/@cadlens/mcp-server)
+- [GitHub repository](https://github.com/cadlens-co/cadlens-mcp)
+
+---
+
+## GitHub Topics
+
+Add these topics to this repo for discovery:
+`mcp` `mcp-server` `model-context-protocol` `ai-agents` `claude` `cad` `dwg` `dxf` `cad-api` `llm-tools` `engineering-api`
+
+---
 
 ## License
 
