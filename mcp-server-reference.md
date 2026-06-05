@@ -21,7 +21,7 @@ CADLens is a CAD file parser SaaS. POST a `.dwg` / `.dxf` / `.dwf` / `.dwfx` / `
 | **Local dev base URL** | `http://localhost:3001/v1` |
 | **Env var convention** | `CADLENS_API_BASE`, `CADLENS_API_KEY` |
 | **Auth (parse/jobs)** | `Authorization: Bearer <api_key>` |
-| **Max file size** | 100 MB |
+| **Max file size** | 10 MB (FREE) → 1 GB (ENTERPRISE) — plan-dependent |
 | **Job lifecycle** | `PENDING → PROCESSING → COMPLETED \| FAILED` |
 | **Result URL TTL** | 3600 s (1 h), refetchable |
 
@@ -123,7 +123,7 @@ Sync-timeout responses additionally include `"message": "Sync wait timed out —
 |---|---|
 | 400 | No file, unsupported format, DGN V8 (export to DXF/DWG first), or Zod validation failure on `webhookUrl` / `mode`. |
 | 401 | Missing / invalid / revoked / expired API key. |
-| 413 | File > 100 MB. |
+| 413 | File exceeds the plan's per-upload limit (10 MB FREE → 1 GB ENTERPRISE). |
 | 429 | Monthly quota for the plan reached (see §7). |
 
 ---
@@ -455,16 +455,16 @@ Zod validation error (400):
 | 500 | Server error |
 | 503 | Database unreachable |
 
-### Monthly quotas (per user, UTC, resets on the 1st)
+### Monthly quotas & upload limits (per user, UTC, resets on the 1st)
 
-| Plan | Requests / month |
-|---|---|
-| `FREE` | 100 |
-| `STARTER` | 1,000 |
-| `BUILDER` | 5,000 |
-| `GROWTH` | 25,000 |
-| `SCALE` | 100,000 |
-| `ENTERPRISE` | unlimited |
+| Plan | Requests / month | Max upload per file |
+|---|---|---|
+| `FREE` | 50 | 10 MB |
+| `STARTER` | 500 | 25 MB |
+| `GROWTH` | 2,000 | 50 MB |
+| `PRO` | 10,000 | 100 MB |
+| `BUSINESS` | 40,000 | 250 MB |
+| `ENTERPRISE` | unlimited | 1 GB |
 
 When the quota is hit, every `POST /v1/parse` returns 429 until the next month rolls over.
 
@@ -472,7 +472,7 @@ When the quota is hit, every `POST /v1/parse` returns 429 until the next month r
 
 | | |
 |---|---|
-| Max size | 100 MB (Multer-enforced) |
+| Max size | Depends on plan (10 MB FREE → 1 GB ENTERPRISE; see table above) |
 | Accepted extensions | `.dwg`, `.dxf`, `.dwf`, `.dwfx`, `.dgn` (V7 only), `.pdf` |
 | Rejected | DGN V8 — return a hint to export to DXF/DWG from MicroStation first |
 | Validation | Magic-byte check, not extension — but the extension must match an allowed type |
@@ -490,7 +490,7 @@ Upload a local file, poll until completion (or timeout), return summary.
 ```json
 {
   "name": "cadlens_parse_file",
-  "description": "Parse a local CAD file (DWG/DXF/DWF/DWFx/DGN-V7/PDF, max 100 MB). Polls until the job completes or 5 minutes elapse. Returns a summary of the parsed drawing including the preview image URL. Use cadlens_get_result with the returned job_id to fetch detailed entity data.",
+  "description": "Parse a local CAD file (DWG/DXF/DWF/DWFx/DGN-V7/PDF). Polls until the job completes or 5 minutes elapse. Returns a summary of the parsed drawing including the preview image URL. Use cadlens_get_result with the returned job_id to fetch detailed entity data. File size limit depends on your plan (10 MB FREE → 1 GB ENTERPRISE).",
   "inputSchema": {
     "type": "object",
     "properties": {

@@ -9,7 +9,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io) server that wraps th
 
 ## Install
 
-Get an API key from the [Cadlens dashboard](https://cadlens.co) first — keys start with `cad_` and are created in the dashboard for free.
+Get an API key from the [Cadlens dashboard](https://cadlens.co) first — keys start with `cadl_` and are created in the dashboard for free.
 
 ### Claude Desktop / Cursor / Windsurf
 
