@@ -3,12 +3,12 @@
   "name": "io.github.cadlens-co/cadlens-mcp",
   "description": "Model Context Protocol server that wraps the CADLens REST API.",
   "repository": { "url": "https://github.com/cadlens-co/cadlens-mcp", "source": "github" },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@cadlens/mcp-server",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": { "type": "stdio" },
       "environmentVariables": [
         {
