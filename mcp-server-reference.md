@@ -31,7 +31,7 @@ CADLens is a CAD file parser SaaS. POST a `.dwg` / `.dxf` / `.dwf` / `.dwfx` / `
 2. MCP server reads `CADLENS_API_KEY` from env.
 3. `POST /v1/parse` with the file → returns `job_id` and initial `status`.
 4. Poll `GET /v1/jobs/:job_id` until `status === 'COMPLETED'` (or `'FAILED'`).
-5. Fetch `GET /v1/jobs/:job_id/result` for `vectorJson`, `layersJson`, `metadata`, `imageUrl`.
+5. Fetch `GET /v1/jobs/:job_id/result` for `file`, `summary`, `sheets[]` (entities + layers per sheet), `metadata`, `imageUrl`.
 
 ---
 
@@ -96,8 +96,9 @@ Content-Type: multipart/form-data
   "fileSize": 1843200,
   "createdAt": "2026-05-13T10:14:22.000Z",
   "completedAt": "2026-05-13T10:14:25.000Z",
-  "vectorJson": { "entities": [ /* CadEntity[] */ ] },
-  "layersJson": [ /* LayerDef[] */ ],
+  "file": { "name": "floorplan.dwg", "format": "DWG", "version": "AC1021", "units": "mm" },
+  "summary": { "totalSheets": 1, "totalEntities": 142, "totalLayers": 8, "truncated": false },
+  "sheets": [ /* Sheet[] — entities + layers grouped per sheet */ ],
   "metadata": { /* DrawingMetadata */ },
   "imageUrl": "https://s3.amazonaws.com/.../preview.png?X-Amz-Signature=..."
 }
@@ -196,10 +197,20 @@ Returns the parsed content. **Only valid when `status === 'COMPLETED'`** — oth
 {
   "jobId": "42",
   "status": "COMPLETED",
-  "vectorJson": { "entities": [ /* CadEntity[] */ ] },
-  "layersJson": [ /* LayerDef[] */ ],
+  "file": { "name": "floorplan.dwg", "format": "DWG", "version": "AC1021", "units": "mm" },
+  "summary": { "totalSheets": 1, "totalEntities": 142, "totalLayers": 8, "truncated": false },
+  "sheets": [
+    {
+      "name": "Model", "index": 0,
+      "imageUrl": "https://s3.amazonaws.com/.../preview-0.png?...",
+      "entityCount": 142, "layerCount": 8,
+      "layers": [ /* LayerDef[] — only layers used in this sheet */ ],
+      "entities": [ /* CadEntity[] — only entities in this sheet */ ]
+    }
+  ],
   "metadata": { /* DrawingMetadata */ },
-  "imageUrl": "https://s3.amazonaws.com/.../preview.png?X-Amz-Signature=...",
+  "imageUrl": "https://s3.amazonaws.com/.../preview-0.png?X-Amz-Signature=...",
+  "imageUrls": ["https://s3.amazonaws.com/.../preview-0.png?X-Amz-Signature=..."],
   "createdAt": "2026-05-13T10:14:25.000Z"
 }
 ```
@@ -272,7 +283,7 @@ PENDING ──► PROCESSING ──► COMPLETED
 |---|---|---|
 | `PENDING` | Queued in Redis stream `stream:cad-parse`, awaiting a worker. | No |
 | `PROCESSING` | Worker dequeued the job, ODA File Converter + DXF parser running. | No |
-| `COMPLETED` | Parse succeeded, `JobResult` row written. | Yes — `vectorJson`, `layersJson`, `metadata`, `imageKey` |
+| `COMPLETED` | Parse succeeded, `JobResult` row written. | Yes — `file`, `summary`, `sheets[]`, `metadata`, `imageUrl` |
 | `FAILED` | Parse error. `errorMsg` populated. | No |
 
 ### Recommended polling cadence
@@ -353,16 +364,16 @@ interface DrawingMetadata {
 
 ### 5.4 Token cost warning
 
-`vectorJson.entities` can easily exceed **50,000 entries** for floor plans or assemblies. A full `cadlens_get_result` response can be **megabytes** of JSON — far too much to inject into an LLM prompt.
+`sheets[].entities` can easily exceed **50,000 entries** for floor plans or assemblies. A full `cadlens_get_result` response can be **megabytes** of JSON — far too much to inject into an LLM prompt.
 
 **Strongly recommend** the MCP server expose a `mode` parameter on the result tool:
 
 | `mode` value | Returns |
 |---|---|
-| `"summary"` (default) | Just `metadata`, `layersJson`, entity count by type. ~1–2 KB. |
-| `"entities_by_type"` | `metadata`, `layersJson`, plus `entities` filtered to a single `type` the LLM asks for. |
-| `"entities_on_layer"` | Same, filtered to a single layer. |
-| `"full"` | The complete response. Use sparingly. |
+| `"summary"` (default) | `file`, `summary`, layer names per sheet, entity count by type. ~1–2 KB. |
+| `"entities_by_type"` | `metadata`, `summary`, plus `entities` filtered to a single `type` across all sheets. |
+| `"entities_on_layer"` | Same, filtered to a single layer name. |
+| `"full"` | The complete response including all sheets. Use sparingly. |
 
 See §8 for the suggested tool schema.
 
@@ -395,10 +406,11 @@ interface WebhookPayload {
   status: string;                 // 'PROCESSING' | 'COMPLETED' | 'FAILED'
   timestamp: string;              // ISO 8601
   result?: {
-    entityCount?: number;
-    layerCount?: number;
     imageUrl?: string;
-    resultUrl?: string;
+    imageUrls?: string[];
+    file?: { name: string; format: string; version: string; units: string };
+    summary?: { totalSheets: number; totalEntities: number; totalLayers: number; truncated: boolean };
+    sheets?: Sheet[];
   };
   error?: string;                 // present when event === 'job.failed'
 }
@@ -708,24 +720,29 @@ async function pollUntilDone(jobId: string, timeoutMs = 5 * 60 * 1000) {
 }
 
 function summarize(result: any) {
-  const entities: any[] = result.vectorJson?.entities ?? [];
+  const sheets: any[] = result.sheets ?? [];
+  const entities: any[] = sheets.flatMap((s: any) => s.entities ?? []);
   const byType: Record<string, number> = {};
   for (const e of entities) byType[e.type] = (byType[e.type] ?? 0) + 1;
+  const layerMap = new Map<string, any>();
+  for (const s of sheets) for (const l of s.layers ?? []) if (!layerMap.has(l.name)) layerMap.set(l.name, l);
   return {
     job_id: result.jobId,
     status: result.status,
-    format: result.metadata?.format,
-    units: result.metadata?.units,
-    bounding_box: result.metadata?.boundingBox,
-    entity_count: entities.length,
+    format: result.file?.format ?? result.metadata?.format,
+    units: result.file?.units ?? result.metadata?.units,
+    total_sheets: sheets.length,
+    bounding_box: result.summary?.boundingBox ?? result.metadata?.boundingBox,
+    entity_count: result.summary?.totalEntities ?? entities.length,
     entity_count_by_type: byType,
-    layers: (result.layersJson ?? []).map((l: any) => ({
+    layers: Array.from(layerMap.values()).map((l: any) => ({
       name: l.name,
       colorHex: l.colorHex,
       entityCount: l.entityCount,
     })),
-    image_url: result.imageUrl,
+    image_url: result.imageUrl ?? result.imageUrls?.[0],
     image_url_expires_in_seconds: 3600,
+    truncated: result.summary?.truncated === true,
   };
 }
 
@@ -832,12 +849,12 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         }
         if (mode === 'entities_by_type') {
           const t = String(args?.['entity_type']);
-          const entities = (result.vectorJson?.entities ?? []).filter((e: any) => e.type === t);
+          const entities = (result.sheets ?? []).flatMap((s: any) => s.entities ?? []).filter((e: any) => e.type === t);
           return { content: [{ type: 'text', text: JSON.stringify({ jobId, metadata: result.metadata, type: t, entities }, null, 2) }] };
         }
         if (mode === 'entities_on_layer') {
           const ln = String(args?.['layer_name']);
-          const entities = (result.vectorJson?.entities ?? []).filter((e: any) => e.layer === ln);
+          const entities = (result.sheets ?? []).flatMap((s: any) => s.entities ?? []).filter((e: any) => e.layer === ln);
           return { content: [{ type: 'text', text: JSON.stringify({ jobId, metadata: result.metadata, layer: ln, entities }, null, 2) }] };
         }
         return { content: [{ type: 'text', text: JSON.stringify(summarize(result), null, 2) }] };
@@ -948,7 +965,7 @@ The Job entity has an unused `clientRequestId` column intended for future idempo
 | **DGN** | MicroStation drawing format. V7 supported, V8 not. |
 | **ACI** | AutoCAD Color Index — a 256-entry palette. |
 | **ODA** | Open Design Alliance — vendor of the File Converter CLI CADLens uses to convert DWG → DXF internally. |
-| **JSONB** | PostgreSQL binary JSON column type — how `vectorJson`/`layersJson`/`metadata` are stored. |
+| **JSONB** | PostgreSQL binary JSON column type — how entity/layer data and `metadata` are stored in the DB. |
 | **PEL** | Redis Streams Pending Entry List — where in-flight or failed messages sit until ACKed. |
 | **SigV4** | AWS Signature Version 4 — the signing scheme presigned S3 URLs use. |
 

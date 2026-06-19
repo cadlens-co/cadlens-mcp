@@ -29,14 +29,17 @@ describe('startWebhookReceiver', () => {
         jobId: '42',
         status: 'COMPLETED',
         timestamp: new Date().toISOString(),
-        result: { entityCount: 100, imageUrl: 'https://x.test/img.png' },
+        result: {
+          imageUrl: 'https://x.test/img.png',
+          summary: { totalSheets: 1, totalEntities: 100, totalLayers: 3, truncated: false },
+        },
       }),
     });
     expect(res.status).toBe(204);
 
     const snap = jobState.get('42');
     expect(snap?.status).toBe('COMPLETED');
-    expect(snap?.hints?.entityCount).toBe(100);
+    expect((snap?.hints?.summary as { totalEntities?: number } | undefined)?.totalEntities).toBe(100);
   });
 
   it('rejects wrong token with 404', async () => {

@@ -19,9 +19,12 @@ describe('summarize', () => {
   });
 
   it('handles empty entities and layers', () => {
-    const s = summarize(
-      makeJobResult({ vectorJson: { entities: [] }, layersJson: [] }),
-    );
+    const base = makeJobResult();
+    const s = summarize({
+      ...base,
+      summary: { ...base.summary!, totalEntities: 0, totalLayers: 0 },
+      sheets: [{ ...base.sheets[0], entities: [], layers: [], entityCount: 0, layerCount: 0 }],
+    });
     expect(s.entity_count).toBe(0);
     expect(s.entity_count_by_type).toEqual({});
     expect(s.layers).toEqual([]);

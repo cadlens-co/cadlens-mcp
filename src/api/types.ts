@@ -119,6 +119,7 @@ export interface DrawingMetadata {
   dwgVersion: string;
   units: 'mm' | 'cm' | 'm' | 'inch' | 'feet' | 'unknown';
   boundingBox: BoundingBox;
+  layouts?: string[];
   truncated?: boolean;
 }
 
@@ -139,13 +140,43 @@ export interface Job {
   webhookUrl?: string | null;
 }
 
+export interface FileInfo {
+  name: string;
+  format: string;
+  version: string;
+  units: string;
+}
+
+export interface ResultSummary {
+  totalSheets: number;
+  totalEntities: number;
+  totalLayers: number;
+  boundingBox?: BoundingBox;
+  truncated: boolean;
+}
+
+export interface Sheet {
+  name: string;
+  index: number;
+  imageUrl: string | null;
+  entityCount: number;
+  layerCount: number;
+  boundingBox: BoundingBox;
+  area: number;
+  perimeter: number;
+  layers: LayerDef[];
+  entities: CadEntity[];
+}
+
 export interface JobResult {
   jobId: string;
   status: 'COMPLETED';
-  vectorJson: { entities: CadEntity[] };
-  layersJson: LayerDef[];
+  file?: FileInfo;
+  summary?: ResultSummary;
+  sheets: Sheet[];
   metadata: DrawingMetadata;
-  imageUrl: string;
+  imageUrl?: string;
+  imageUrls?: string[];
   createdAt: string;
 }
 
@@ -161,10 +192,12 @@ export interface ParseResponseAsync {
 export interface ParseResponseSync extends ParseResponseAsync {
   status: 'COMPLETED';
   completedAt: string;
-  vectorJson: { entities: CadEntity[] };
-  layersJson: LayerDef[];
+  file?: FileInfo;
+  summary?: ResultSummary;
+  sheets: Sheet[];
   metadata: DrawingMetadata;
-  imageUrl: string;
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 export type ParseResponse = ParseResponseAsync | ParseResponseSync;
@@ -177,10 +210,11 @@ export interface WebhookPayload {
   status: JobStatus;
   timestamp: string;
   result?: {
-    entityCount?: number;
-    layerCount?: number;
     imageUrl?: string;
-    resultUrl?: string;
+    imageUrls?: string[];
+    file?: FileInfo;
+    summary?: ResultSummary;
+    sheets?: Sheet[];
   };
   error?: string;
 }

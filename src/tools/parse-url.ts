@@ -86,14 +86,16 @@ export const parseUrlTool: ToolDefinition = {
       body: form,
     });
 
-    if (created.status === 'COMPLETED' && 'vectorJson' in created) {
+    if (created.status === 'COMPLETED' && 'sheets' in created) {
       const result = {
         jobId: created.job_id,
         status: 'COMPLETED' as const,
-        vectorJson: created.vectorJson,
-        layersJson: created.layersJson,
+        file: created.file,
+        summary: created.summary,
+        sheets: created.sheets,
         metadata: created.metadata,
         imageUrl: created.imageUrl,
+        imageUrls: created.imageUrls,
         createdAt: created.createdAt,
       };
       ctx.cache.set(created.job_id, result);

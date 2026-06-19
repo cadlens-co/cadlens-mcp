@@ -46,13 +46,13 @@ export const getResultTool: ToolDefinition = {
     if (mode === 'entities_by_type') {
       const t = args['entity_type'];
       if (!t) throw new Error("entity_type is required when mode='entities_by_type'");
-      const entities = (result.vectorJson?.entities ?? []).filter((e) => e.type === t);
+      const entities = (result.sheets ?? []).flatMap((s) => s.entities).filter((e) => e.type === t);
       return { jobId, metadata: result.metadata, type: t, entities };
     }
     if (mode === 'entities_on_layer') {
       const ln = args['layer_name'];
       if (!ln) throw new Error("layer_name is required when mode='entities_on_layer'");
-      const entities = (result.vectorJson?.entities ?? []).filter((e) => e.layer === ln);
+      const entities = (result.sheets ?? []).flatMap((s) => s.entities).filter((e) => e.layer === ln);
       return { jobId, metadata: result.metadata, layer: ln, entities };
     }
     return summarize(result);

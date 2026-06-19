@@ -25,9 +25,9 @@ describe('cadlens_get_result', () => {
     const ctx = buildCtx();
     await getResultTool.handler({ job_id: '42' }, ctx);
     const out = (await getResultTool.handler({ job_id: '42', mode: 'full' }, ctx)) as {
-      vectorJson: { entities: unknown[] };
+      sheets: Array<{ entities: unknown[] }>;
     };
-    expect(out.vectorJson.entities).toHaveLength(4);
+    expect(out.sheets[0].entities).toHaveLength(4);
   });
 
   it('entities_by_type filters', async () => {
@@ -55,8 +55,8 @@ describe('cadlens_get_result', () => {
     const out = (await getResultTool.handler(
       { job_id: '42', mode: 'full' },
       buildCtx(),
-    )) as { vectorJson: { entities: unknown[] } };
-    expect(out.vectorJson.entities).toHaveLength(4);
+    )) as { sheets: Array<{ entities: unknown[] }> };
+    expect(out.sheets[0].entities).toHaveLength(4);
   });
 
   it('entities_by_type requires entity_type', async () => {
