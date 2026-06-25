@@ -120,6 +120,8 @@ export interface DrawingMetadata {
   units: 'mm' | 'cm' | 'm' | 'inch' | 'feet' | 'unknown';
   boundingBox: BoundingBox;
   layouts?: string[];
+  layoutLabels?: string[];
+  layoutKeys?: string[];
   truncated?: boolean;
 }
 
@@ -157,6 +159,7 @@ export interface ResultSummary {
 
 export interface Sheet {
   name: string;
+  key: string;
   index: number;
   imageUrl: string | null;
   entityCount: number;
