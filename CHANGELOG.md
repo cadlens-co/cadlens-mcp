@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1] — 2026-06-26
+
+### Fixed
+- `get_job_result` tool: API now responds promptly for drawings with large entity counts
+  (PDFs, complex DXF files). Previously the endpoint timed out, making results unavailable
+  to LLM clients.
+- PDF files now correctly return one image URL per page in `image_urls`. Previously only
+  a single entry was returned (or the request timed out entirely).
+
 ## [0.2.0] — 2026-06-25
 
 ### Added
