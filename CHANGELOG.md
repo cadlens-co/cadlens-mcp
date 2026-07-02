@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0] — 2026-07-02
+
+### Added
+- `HATCH` added to the `CadEntity` union and `CAD_ENTITY_TYPES` (boundaries, `solid`,
+  `patternName`, `patternAngle`, `patternScale`, and new `patternLines` — exact hatch
+  pattern geometry in drawing units with rotation/scale applied).
+- `DrawingMetadata.linetypePatterns` (LTYPE table) and `DrawingMetadata.ltscale`.
+
+### Fixed (API behaviour)
+- Mirrored-OCS entities (extrusion normal 0,0,−1) now returned at correct WCS
+  coordinates; Z-artifact entities projected instead of dropped.
+
 ## [0.2.1] — 2026-06-26
 
 ### Fixed

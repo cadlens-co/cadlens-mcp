@@ -78,7 +78,28 @@ export type CadEntity =
       startAngle: number;
       endAngle: number;
       colorIndex?: number;
+    }
+  | {
+      type: 'HATCH';
+      id: string;
+      layer: string;
+      colorIndex?: number;
+      boundaries: Array<{ edges: CadEntity[] }>;
+      solid?: boolean;
+      patternName?: string;
+      patternAngle?: number;
+      patternScale?: number;
+      /** Exact pattern geometry — drawing units, rotation/scale already applied */
+      patternLines?: HatchPatternLine[];
     };
+
+/** One hatch pattern-definition line family (DXF groups 53/43/44/45/46/49). */
+export interface HatchPatternLine {
+  angle: number;                    // degrees CCW from +X
+  base: { x: number; y: number };   // base point of the first line
+  offset: { x: number; y: number }; // offset to the next parallel line
+  dashes: number[];                 // + dash, − gap, 0 = dot; empty = solid
+}
 
 export type CadEntityType = CadEntity['type'];
 
@@ -93,6 +114,7 @@ export const CAD_ENTITY_TYPES: CadEntityType[] = [
   'INSERT',
   'SPLINE',
   'ELLIPSE',
+  'HATCH',
 ];
 
 export interface LayerDef {
@@ -122,6 +144,10 @@ export interface DrawingMetadata {
   layouts?: string[];
   layoutLabels?: string[];
   layoutKeys?: string[];
+  /** LTYPE table: linetype name → dash/gap array in drawing units (+ dash, − gap) */
+  linetypePatterns?: Record<string, number[]>;
+  /** DXF $LTSCALE global linetype scale factor */
+  ltscale?: number;
   truncated?: boolean;
 }
 
