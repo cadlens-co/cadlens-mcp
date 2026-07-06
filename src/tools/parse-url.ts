@@ -43,6 +43,12 @@ export const parseUrlTool: ToolDefinition = {
     properties: {
       url: { type: 'string', format: 'uri', description: 'HTTPS URL pointing to a CAD file.' },
       webhook_url: { type: 'string', format: 'uri' },
+      notify_email: {
+        type: 'string',
+        format: 'email',
+        description:
+          'Optional email address CADLens notifies with a job link when the parse finishes unattended.',
+      },
     },
     required: ['url'],
   },
@@ -80,6 +86,8 @@ export const parseUrlTool: ToolDefinition = {
     form.append('file', new File([buf], filename));
     const webhookUrl = (args['webhook_url'] as string | undefined) ?? ctx.webhookUrl;
     if (webhookUrl) form.append('webhookUrl', webhookUrl);
+    const notifyEmail = args['notify_email'] as string | undefined;
+    if (notifyEmail) form.append('notifyEmail', notifyEmail);
 
     const created = await ctx.client.fetch<ParseResponse>('/parse', {
       method: 'POST',

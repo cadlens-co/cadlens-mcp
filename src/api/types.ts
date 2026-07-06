@@ -238,12 +238,19 @@ export interface WebhookPayload {
   jobId: string;
   status: JobStatus;
   timestamp: string;
+  // Webhook sheets carry metadata only (no entities/layers) since API v1.4.0;
+  // fetch full geometry from `resultUrl` (GET /v1/jobs/:id/result). Payloads
+  // over 256 KB omit `sheets` entirely.
   result?: {
     imageUrl?: string;
     imageUrls?: string[];
     file?: FileInfo;
     summary?: ResultSummary;
-    sheets?: Sheet[];
+    sheets?: SheetSummary[];
+    resultUrl?: string;
   };
   error?: string;
 }
+
+/** A Sheet without the raw geometry arrays — the shape used in webhook payloads. */
+export type SheetSummary = Omit<Sheet, 'entities' | 'layers'>;

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] — 2026-07-06
+
+### Added
+- `notify_email` input on `cadlens_parse_file` and `cadlens_parse_url`: CADLens
+  emails a job link when the parse finishes unattended (suppressed when the
+  uploader watches the job complete live).
+- `WebhookPayload.result.resultUrl` and `SheetSummary` type.
+
+### Changed (breaking for webhook consumers)
+- `WebhookPayload.result.sheets` is now `SheetSummary[]` — sheets carry metadata
+  only (no `entities`/`layers`), matching API v1.4.0 slim webhook payloads.
+  Fetch full geometry from `resultUrl` (`GET /v1/jobs/:id/result`, unchanged) or
+  the `cadlens_get_result` tool. Payloads over 256 KB omit `sheets` entirely.
+
 ## [0.3.0] — 2026-07-02
 
 ### Added

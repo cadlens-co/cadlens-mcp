@@ -22,6 +22,12 @@ export const parseFileTool: ToolDefinition = {
         description:
           'Optional external webhook URL for state-change notifications. Independent of the auto-registered local receiver.',
       },
+      notify_email: {
+        type: 'string',
+        format: 'email',
+        description:
+          'Optional email address CADLens notifies with a job link when the parse finishes unattended.',
+      },
     },
     required: ['path'],
   },
@@ -36,6 +42,8 @@ export const parseFileTool: ToolDefinition = {
     form.append('file', new File([buf], basename(path)));
     const webhookUrl = (args['webhook_url'] as string | undefined) ?? ctx.webhookUrl;
     if (webhookUrl) form.append('webhookUrl', webhookUrl);
+    const notifyEmail = args['notify_email'] as string | undefined;
+    if (notifyEmail) form.append('notifyEmail', notifyEmail);
 
     const created = await ctx.client.fetch<ParseResponse>('/parse', {
       method: 'POST',
