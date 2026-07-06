@@ -14,6 +14,11 @@
   Fetch full geometry from `resultUrl` (`GET /v1/jobs/:id/result`, unchanged) or
   the `cadlens_get_result` tool. Payloads over 256 KB omit `sheets` entirely.
 
+### Notes (API v1.4.1, 2026-07-06)
+- API responses are now gzip-compressed via standard content negotiation
+  (`Accept-Encoding`). HTTP clients handle this automatically — no SDK code
+  change or upgrade required; large results simply download ~12× faster.
+
 ## [0.3.0] — 2026-07-02
 
 ### Added
