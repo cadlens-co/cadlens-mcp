@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0] — 2026-07-13
+
+### Changed — BREAKING (API Schema v2.0.0)
+- `CadEntity` restructured to the Schema v2 envelope: flat coordinate fields
+  moved into `entity.geometry` (per-type spatial fields, original precision);
+  each entity now carries `handle` (original CAD handle or `null`), `category`
+  (`Geometry`/`Annotation`/`BlockReference`/`Hatch`/`Other`), `layout`, and
+  always-present `properties`, `bbox`, `metrics` siblings (computed helpers,
+  6-decimal, `null` when not applicable), plus `text` (TEXT/MTEXT) and
+  `reference` (INSERT). The type remains a discriminated union on `type` with
+  per-type `geometry` shapes.
+- `mcp-server-reference.md` data-shape docs updated to the v2 envelope.
+
+### Added
+- `JobResult.schemaVersion` / `parserVersion` ("2.0.0"), `JobResult.parseInfo`
+  (`{durationMs, warnings, errors}` — `durationMs` null pre-v2), and
+  `ResultSummary.statistics` (`byType` / `byCategory` counts).
+- `WebhookPayload.result.schemaVersion` (additive).
+
 ## [0.5.0] — 2026-07-07
 
 ### Added

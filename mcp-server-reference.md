@@ -97,7 +97,7 @@ Content-Type: multipart/form-data
   "createdAt": "2026-05-13T10:14:22.000Z",
   "completedAt": "2026-05-13T10:14:25.000Z",
   "file": { "name": "floorplan.dwg", "format": "DWG", "version": "AC1021", "units": "mm" },
-  "summary": { "totalSheets": 1, "totalEntities": 142, "totalLayers": 8, "truncated": false },
+  "summary": { "totalSheets": 1, "totalEntities": 142, "totalLayers": 8, "statistics": { "byType": { "LINE": 98, "TEXT": 30, "INSERT": 14 }, "byCategory": { "Geometry": 98, "Annotation": 30, "BlockReference": 14 } }, "truncated": false },
   "sheets": [ /* Sheet[] — entities + layers grouped per sheet */ ],
   "metadata": { /* DrawingMetadata */ },
   "imageUrl": "https://s3.amazonaws.com/.../preview.png?X-Amz-Signature=..."
@@ -198,17 +198,18 @@ Returns the parsed content. **Only valid when `status === 'COMPLETED'`** — oth
   "jobId": "42",
   "status": "COMPLETED",
   "file": { "name": "floorplan.dwg", "format": "DWG", "version": "AC1021", "units": "mm" },
-  "summary": { "totalSheets": 1, "totalEntities": 142, "totalLayers": 8, "truncated": false },
+  "summary": { "totalSheets": 1, "totalEntities": 142, "totalLayers": 8, "statistics": { "byType": { "LINE": 98, "TEXT": 30, "INSERT": 14 }, "byCategory": { "Geometry": 98, "Annotation": 30, "BlockReference": 14 } }, "truncated": false },
   "sheets": [
     {
       "name": "Model", "index": 0,
       "imageUrl": "https://s3.amazonaws.com/.../preview-0.png?...",
       "entityCount": 142, "layerCount": 8,
       "layers": [ /* LayerDef[] — only layers used in this sheet */ ],
-      "entities": [ /* CadEntity[] — only entities in this sheet */ ]
+      "entities": [ /* CadEntity[] (Schema v2 envelope) — only entities in this sheet */ ]
     }
   ],
   "metadata": { /* DrawingMetadata */ },
+  "parseInfo": { "durationMs": 812, "warnings": [], "errors": [] },
   "imageUrl": "https://s3.amazonaws.com/.../preview-0.png?X-Amz-Signature=...",
   "imageUrls": ["https://s3.amazonaws.com/.../preview-0.png?X-Amz-Signature=..."],
   "createdAt": "2026-05-13T10:14:25.000Z"
@@ -305,25 +306,31 @@ If you hit the timeout, return the `job_id` to the LLM with a "still processing"
 
 These are the structures the LLM will read out of `cadlens_get_result`. Source of truth: `node/src/lib/cad-parser/llm-schema.ts` and `cad-parser.ts:55–104`.
 
-### 5.1 `CadEntity` (discriminated union)
+### 5.1 `CadEntity` (Schema v2 envelope)
 
-Every entity has `type`, `id` (UUID handle), `layer` (name, default `"0"`), and optional `colorIndex` (AutoCAD Color Index, 1–256). Type-specific fields:
+Every entity (API `schemaVersion` 2.0.0) uses the same envelope: identity fields, spatial data grouped under `geometry`, and always-present computed `bbox`/`metrics` siblings (values `null` when not applicable):
 
 ```typescript
 type Point2D = { x: number; y: number; bulge?: number };
 
-type CadEntity =
-  | { type: 'LINE';       id: string; layer: string; start: Point2D; end: Point2D; colorIndex?: number }
-  | { type: 'ARC';        id: string; layer: string; center: Point2D; radius: number; startAngle: number; endAngle: number; colorIndex?: number }
-  | { type: 'CIRCLE';     id: string; layer: string; center: Point2D; radius: number; colorIndex?: number }
-  | { type: 'POLYLINE';   id: string; layer: string; vertices: Point2D[]; closed: boolean; colorIndex?: number }
-  | { type: 'LWPOLYLINE'; id: string; layer: string; vertices: Point2D[]; closed: boolean; colorIndex?: number }
-  | { type: 'TEXT';       id: string; layer: string; text: string; position: Point2D; height: number; rotation: number; colorIndex?: number }
-  | { type: 'MTEXT';      id: string; layer: string; text: string; position: Point2D; height: number; rotation: number; colorIndex?: number }
-  | { type: 'INSERT';     id: string; layer: string; blockName: string; position: Point2D; scaleX: number; scaleY: number; rotation: number; colorIndex?: number }
-  | { type: 'SPLINE';     id: string; layer: string; controlPoints: Point2D[]; degree: number; colorIndex?: number }
-  | { type: 'ELLIPSE';    id: string; layer: string; center: Point2D; majorAxis: Point2D; ratio: number; startAngle: number; endAngle: number; colorIndex?: number };
+interface CadEntity {
+  id: string;                 // CAD handle, or synthetic UUID when absent
+  handle: string | null;      // original CAD handle (DXF group 5) — never derived from id
+  type: string;               // LINE | ARC | CIRCLE | POLYLINE | LWPOLYLINE | TEXT | MTEXT | INSERT | SPLINE | ELLIPSE | HATCH | ...
+  category: 'Geometry' | 'Annotation' | 'BlockReference' | 'Hatch' | 'Other';
+  layer: string;              // name, default "0"
+  layout: string | null;
+  geometry: Record<string, unknown>;      // spatial fields per type, original precision
+  text: { value: string; height: number; style: string | null } | null;    // TEXT/MTEXT only
+  reference: { blockName: string } | null;                                 // INSERT only
+  properties: { colorIndex: number | null; lineType: string | null; lineweight: number | null; visible: boolean;
+                solid: boolean | null; patternName: string | null; patternAngle: number | null; patternScale: number | null };
+  bbox: { minX: number | null; minY: number | null; maxX: number | null; maxY: number | null };
+  metrics: { length: number | null; area: number | null; perimeter: number | null; vertexCount: number | null };
+}
 ```
+
+Geometry per type: LINE `{start, end}`; ARC `{center, radius, startAngle, endAngle}`; CIRCLE `{center, radius}`; POLYLINE/LWPOLYLINE `{vertices, closed, filled}`; TEXT/MTEXT `{position, rotation}`; INSERT `{position, scaleX, scaleY, rotation}`; SPLINE `{controlPoints, degree, knots}`; ELLIPSE `{center, majorAxis, ratio, startAngle, endAngle}`; HATCH `{boundaries}`.
 
 Angles for `ARC` and `ELLIPSE` are in **radians**. Rotation for `TEXT`/`MTEXT`/`INSERT` is in **degrees**. `bulge` on a vertex is a polyline arc-fitting parameter (DXF group code 42).
 

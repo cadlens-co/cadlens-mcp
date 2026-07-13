@@ -1,97 +1,78 @@
 export type Point2D = { x: number; y: number; bulge?: number };
 
+export type EntityCategory = 'Geometry' | 'Annotation' | 'BlockReference' | 'Hatch' | 'Other';
+
+/** Computed axis-aligned bounds (6-decimal). All values null when uncomputable (e.g. INSERT). */
+export interface EntityBbox {
+  minX: number | null;
+  minY: number | null;
+  maxX: number | null;
+  maxY: number | null;
+}
+
+/** Computed helper values (6-decimal, exact-only); null when not applicable. */
+export interface EntityMetrics {
+  length: number | null;
+  area: number | null;
+  perimeter: number | null;
+  vertexCount: number | null;
+}
+
+/** Display properties. HATCH pattern fields are null on non-HATCH types. */
+export interface EntityProperties {
+  colorIndex: number | null;
+  lineType: string | null;
+  lineweight: number | null;
+  visible: boolean;
+  solid: boolean | null;
+  patternName: string | null;
+  patternAngle: number | null;
+  patternScale: number | null;
+}
+
+/** TEXT/MTEXT content — null on other entity types. */
+export interface EntityText {
+  value: string;
+  height: number;
+  style: string | null;
+}
+
+/** INSERT block reference — null on other entity types. */
+export interface EntityReference {
+  blockName: string;
+}
+
+/** Shared Schema v2 entity envelope fields. */
+interface EntityBase {
+  /** Stable identifier — CAD handle when available, otherwise a synthetic UUID. */
+  id: string;
+  /** Original CAD handle (DXF group code 5) or null — never derived from `id`. */
+  handle: string | null;
+  layer: string;
+  layout: string | null;
+  properties: EntityProperties;
+  bbox: EntityBbox;
+  metrics: EntityMetrics;
+}
+
+/**
+ * Schema v2 entity envelope (API schemaVersion 2.0.0). Spatial data lives in
+ * `geometry` (original precision; ARC/ELLIPSE angles in radians, TEXT/INSERT
+ * rotation in degrees); `text`/`reference` are populated only for the types
+ * that use them.
+ */
 export type CadEntity =
-  | { type: 'LINE'; id: string; layer: string; start: Point2D; end: Point2D; colorIndex?: number }
-  | {
-      type: 'ARC';
-      id: string;
-      layer: string;
-      center: Point2D;
-      radius: number;
-      startAngle: number;
-      endAngle: number;
-      colorIndex?: number;
-    }
-  | { type: 'CIRCLE'; id: string; layer: string; center: Point2D; radius: number; colorIndex?: number }
-  | {
-      type: 'POLYLINE';
-      id: string;
-      layer: string;
-      vertices: Point2D[];
-      closed: boolean;
-      colorIndex?: number;
-    }
-  | {
-      type: 'LWPOLYLINE';
-      id: string;
-      layer: string;
-      vertices: Point2D[];
-      closed: boolean;
-      colorIndex?: number;
-    }
-  | {
-      type: 'TEXT';
-      id: string;
-      layer: string;
-      text: string;
-      position: Point2D;
-      height: number;
-      rotation: number;
-      colorIndex?: number;
-    }
-  | {
-      type: 'MTEXT';
-      id: string;
-      layer: string;
-      text: string;
-      position: Point2D;
-      height: number;
-      rotation: number;
-      colorIndex?: number;
-    }
-  | {
-      type: 'INSERT';
-      id: string;
-      layer: string;
-      blockName: string;
-      position: Point2D;
-      scaleX: number;
-      scaleY: number;
-      rotation: number;
-      colorIndex?: number;
-    }
-  | {
-      type: 'SPLINE';
-      id: string;
-      layer: string;
-      controlPoints: Point2D[];
-      degree: number;
-      colorIndex?: number;
-    }
-  | {
-      type: 'ELLIPSE';
-      id: string;
-      layer: string;
-      center: Point2D;
-      majorAxis: Point2D;
-      ratio: number;
-      startAngle: number;
-      endAngle: number;
-      colorIndex?: number;
-    }
-  | {
-      type: 'HATCH';
-      id: string;
-      layer: string;
-      colorIndex?: number;
-      boundaries: Array<{ edges: CadEntity[] }>;
-      solid?: boolean;
-      patternName?: string;
-      patternAngle?: number;
-      patternScale?: number;
-      /** Exact pattern geometry — drawing units, rotation/scale already applied */
-      patternLines?: HatchPatternLine[];
-    };
+  | (EntityBase & { type: 'LINE'; category: 'Geometry'; geometry: { start: Point2D; end: Point2D }; text: null; reference: null })
+  | (EntityBase & { type: 'ARC'; category: 'Geometry'; geometry: { center: Point2D; radius: number; startAngle: number; endAngle: number }; text: null; reference: null })
+  | (EntityBase & { type: 'CIRCLE'; category: 'Geometry'; geometry: { center: Point2D; radius: number }; text: null; reference: null })
+  | (EntityBase & { type: 'POLYLINE'; category: 'Geometry'; geometry: { vertices: Point2D[]; closed: boolean; filled: boolean | null }; text: null; reference: null })
+  | (EntityBase & { type: 'LWPOLYLINE'; category: 'Geometry'; geometry: { vertices: Point2D[]; closed: boolean; filled: boolean | null }; text: null; reference: null })
+  | (EntityBase & { type: 'TEXT'; category: 'Annotation'; geometry: { position: Point2D; rotation: number }; text: EntityText; reference: null })
+  | (EntityBase & { type: 'MTEXT'; category: 'Annotation'; geometry: { position: Point2D; rotation: number }; text: EntityText; reference: null })
+  | (EntityBase & { type: 'INSERT'; category: 'BlockReference'; geometry: { position: Point2D; scaleX: number; scaleY: number; rotation: number }; text: null; reference: EntityReference })
+  | (EntityBase & { type: 'SPLINE'; category: 'Geometry'; geometry: { controlPoints: Point2D[]; degree: number; knots: number[] | null }; text: null; reference: null })
+  | (EntityBase & { type: 'ELLIPSE'; category: 'Geometry'; geometry: { center: Point2D; majorAxis: Point2D; ratio: number; startAngle: number; endAngle: number }; text: null; reference: null })
+  | (EntityBase & { type: 'HATCH'; category: 'Hatch'; geometry: { boundaries: Array<{ edges: unknown[] }> }; text: null; reference: null });
 
 /** One hatch pattern-definition line family (DXF groups 53/43/44/45/46/49). */
 export interface HatchPatternLine {
@@ -177,12 +158,26 @@ export interface FileInfo {
   units: string;
 }
 
+/** Entity counts grouped by type and by category. */
+export interface ResultStatistics {
+  byType: Record<string, number>;
+  byCategory: Record<string, number>;
+}
+
 export interface ResultSummary {
   totalSheets: number;
   totalEntities: number;
   totalLayers: number;
+  statistics?: ResultStatistics;
   boundingBox?: BoundingBox;
   truncated: boolean;
+}
+
+/** Parse diagnostics. `durationMs` is null for jobs parsed before Schema v2. */
+export interface ParseInfo {
+  durationMs: number | null;
+  warnings: string[];
+  errors: string[];
 }
 
 export interface Sheet {
@@ -200,12 +195,17 @@ export interface Sheet {
 }
 
 export interface JobResult {
+  /** Semver of the JSON contract (Schema v2 = "2.0.0"). */
+  schemaVersion?: string;
+  /** CAD parser engine version, independent of application releases. */
+  parserVersion?: string;
   jobId: string;
   status: 'COMPLETED';
   file?: FileInfo;
   summary?: ResultSummary;
   sheets: Sheet[];
   metadata: DrawingMetadata;
+  parseInfo?: ParseInfo;
   imageUrl?: string;
   imageUrls?: string[];
   createdAt: string;
@@ -244,6 +244,8 @@ export interface WebhookPayload {
   // fetch full geometry from `resultUrl` (GET /v1/jobs/:id/result). Payloads
   // over 256 KB omit `sheets` entirely.
   result?: {
+    /** Semver of the result JSON contract (Schema v2 = "2.0.0"). */
+    schemaVersion?: string;
     imageUrl?: string;
     imageUrls?: string[];
     file?: FileInfo;
