@@ -1,4 +1,19 @@
-import type { JobResult } from '../../src/api/types.js';
+import type { EntityProperties, JobResult } from '../../src/api/types.js';
+
+/** Schema v2 entity `properties` with non-HATCH defaults. */
+function props(overrides: Partial<EntityProperties> = {}): EntityProperties {
+  return {
+    colorIndex: 7,
+    lineType: 'CONTINUOUS',
+    lineweight: null,
+    visible: true,
+    solid: null,
+    patternName: null,
+    patternAngle: null,
+    patternScale: null,
+    ...overrides,
+  };
+}
 
 export function makeJobResult(overrides: Partial<JobResult> = {}): JobResult {
   return {
@@ -15,6 +30,7 @@ export function makeJobResult(overrides: Partial<JobResult> = {}): JobResult {
     sheets: [
       {
         name: 'Model',
+        key: 'Model',
         index: 0,
         imageUrl: 'https://s3.amazonaws.com/test/preview.png?sig=abc',
         entityCount: 4,
@@ -28,10 +44,38 @@ export function makeJobResult(overrides: Partial<JobResult> = {}): JobResult {
           { name: 'NOTES', color: 3, colorHex: '#00FF00', lineType: 'CONTINUOUS', isVisible: true, entityCount: 1 },
         ],
         entities: [
-          { type: 'LINE', id: 'e1', layer: '0', start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
-          { type: 'LINE', id: 'e2', layer: 'WALLS', start: { x: 0, y: 0 }, end: { x: 2, y: 0 } },
-          { type: 'CIRCLE', id: 'e3', layer: 'WALLS', center: { x: 5, y: 5 }, radius: 2 },
-          { type: 'TEXT', id: 'e4', layer: 'NOTES', text: 'NORTH', position: { x: 0, y: 10 }, height: 1, rotation: 0 },
+          {
+            type: 'LINE', category: 'Geometry', id: 'e1', handle: '1A', layer: '0', layout: 'Model',
+            geometry: { start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
+            text: null, reference: null,
+            properties: props(),
+            bbox: { minX: 0, minY: 0, maxX: 1, maxY: 1 },
+            metrics: { length: 1.414214, area: null, perimeter: null, vertexCount: 2 },
+          },
+          {
+            type: 'LINE', category: 'Geometry', id: 'e2', handle: '1B', layer: 'WALLS', layout: 'Model',
+            geometry: { start: { x: 0, y: 0 }, end: { x: 2, y: 0 } },
+            text: null, reference: null,
+            properties: props({ colorIndex: 1 }),
+            bbox: { minX: 0, minY: 0, maxX: 2, maxY: 0 },
+            metrics: { length: 2, area: null, perimeter: null, vertexCount: 2 },
+          },
+          {
+            type: 'CIRCLE', category: 'Geometry', id: 'e3', handle: '1C', layer: 'WALLS', layout: 'Model',
+            geometry: { center: { x: 5, y: 5 }, radius: 2 },
+            text: null, reference: null,
+            properties: props({ colorIndex: 1 }),
+            bbox: { minX: 3, minY: 3, maxX: 7, maxY: 7 },
+            metrics: { length: null, area: 12.566371, perimeter: 12.566371, vertexCount: null },
+          },
+          {
+            type: 'TEXT', category: 'Annotation', id: 'e4', handle: '1D', layer: 'NOTES', layout: 'Model',
+            geometry: { position: { x: 0, y: 10 }, rotation: 0 },
+            text: { value: 'NORTH', height: 1, style: 'STANDARD' }, reference: null,
+            properties: props({ colorIndex: 3 }),
+            bbox: { minX: 0, minY: 10, maxX: 3.5, maxY: 11 },
+            metrics: { length: null, area: null, perimeter: null, vertexCount: null },
+          },
         ],
       },
     ],

@@ -47,6 +47,6 @@ export function summarize(result: JobResult): Summary {
     image_url: result.imageUrl ?? (result.imageUrls?.[0] ?? ''),
     image_urls: result.imageUrls ?? (result.imageUrl ? [result.imageUrl] : []),
     image_url_expires_in_seconds: 3600,
-    truncated: result.summary?.truncated === true,
+    truncated: result.summary?.truncated === true || result.metadata?.truncated === true,
   };
 }

@@ -55,6 +55,20 @@
   `ResultSummary.statistics` (`byType` / `byCategory` counts).
 - `WebhookPayload.result.schemaVersion` (additive).
 
+### Fixed
+- `cadlens_get_result` (summary mode) now reports `truncated: true` when the
+  flag arrives on `metadata.truncated` as well as `summary.truncated`. Both
+  fields are part of the API contract; only the latter was being read, so
+  truncated results could be summarized as complete.
+- The MCP server handshake reported `version: "0.1.0"` regardless of the
+  released version; it now matches the package version.
+
+### Note
+- 0.6.0 is the first npm release since **0.1.2**. Versions 0.2.0–0.5.0 landed
+  in the repository but were never published, so the npm `latest` tag moves
+  0.1.2 → 0.6.0 directly. Everything in those entries below ships in this
+  release — upgrading from 0.1.2 crosses the Schema v2.0.0 break above.
+
 ## [0.5.0] — 2026-07-07
 
 ### Added

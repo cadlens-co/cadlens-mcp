@@ -27,7 +27,7 @@ export function createMcpServer(opts: CreateServerOptions) {
   };
 
   const server = new Server(
-    { name: 'cadlens-mcp', version: '0.1.0' },
+    { name: 'cadlens-mcp', version: '0.6.0' },
     { capabilities: { tools: {} } },
   );
 
